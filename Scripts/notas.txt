@@ -1,0 +1,29 @@
+contraseña del servidor: rusil31
+
+
+scp /mnt/c/Users/oroci/OneDrive/Desktop/TDF/ ... computos@192.168.1.222:/backup/Ariel/Rocio/scripts
+
+scp /mnt/c/Users/oroci/OneDrive/Desktop/TDF/Scripts/enivar_prueba.sh computos@192.168.1.222:/backup/Ariel/Rocio/scripts
+
+scp computos@192.168.1.222:/backup/Ariel/Rocio/scripts/enviar_sucursales.sh /mnt/c/Users/oroci/OneDrive/Desktop/TDF/Scripts
+
+cobranzas.sh
+08-16092024-banco.csv
+08-16092024-caja.csv
+
+17-270924-caja.TXT
+
+/mnt/c/Users/oroci/OneDrive/Desktop/TDF/Scripts/transferencias-graba.sh
+/mnt/c/Users/oroci/OneDrive/Desktop/TDF/Scripts/transferencias.sh
+/mnt/c/Users/oroci/OneDrive/Desktop/TDF/Scripts/cobranzas.sh
+
+archivo banco --> cabecera
+Sucursal;Fecha proceso;Importe;Codigo bco;Banco
+
+archivo caja --> cabecera
+Sucursal;Sucursal;Numero;Apellido y nombre;Importe;Fecha
+
+
+para el lunes: 
+
+ver si los archivos se estan copiando bien 

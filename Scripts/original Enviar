@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Directorio donde se encuentran los archivos TXT
+directorio_archivos="/public/Ariel/Rocio/archivosSuc"
+echo -e "\nLos archivos se buscan en: $directorio_archivos\n"
+
+# Configuración del usuario SFTP
+usuario_sftp="reduser"
+directorio_destino_sftp="/salud/enviados/transferencias"
+usuario_remoto='karina'
+usuario_remoto_suc14='kharina'
+contrasena='XFVBWXNDCxQLBw=='
+
+# Diccionario de sucursales y sus dominios
+declare -A sucursales
+sucursales=(
+    ["01"]="ush" ["02"]="rgd" ["03"]="rgl" ["04"]="psc" ["05"]="lpb"
+    ["06"]="sjn" ["07"]="ggr" ["08"]="rtu" ["09"]="cft" ["10"]="cal"
+    ["11"]="28n" ["12"]="ptd" ["14"]="ptr" ["15"]="lhs" ["16"]="pmo"
+    ["17"]="lan"
+)
+
+
+# Crear un directorio temporal para agrupar los archivos
+temp_dir=$(mktemp -d)
+
+
+echo -e "\nAgrupando archivos por numero de sucursal\n"
+# Agrupar archivos por sucursal
+for tipo in TRANSFERENCIAS PAGDEB; do
+    for archivo in $directorio_archivos/${tipo}-TARJETAS-*-*.TXT; do
+        if [ -f "$archivo" ]; then
+            nombre_archivo=$(basename "$archivo")
+            sucursal=$(echo "$nombre_archivo" | cut -d'-' -f3)
+            mkdir -p "$temp_dir/$sucursal"
+            cp "$archivo" "$temp_dir/$sucursal/"
+            echo "Archivo $tipo copiado para sucursal $sucursal"
+        fi
+    done
+done
+
+echo -e "\nSe procesan los archivos para cada sucursal\n"
+# Procesar cada sucursal 
+for sucursal_dir in "$temp_dir"/*
+do
+    if [ -d "$sucursal_dir" ]; then
+        numero_sucursal=$(basename "$sucursal_dir")
+        
+        # Si es la sucursal 01, mover el archivo pero no usar SFTP, solo ejecutar los scripts locales
+        if [ "$numero_sucursal" == "01" ]; then
+            echo -e "\nEstamos en la sucursal $numero_sucursal, moviendo archivos localmente y ejecutando los scripts.\n"
+            echo -e "\nMoviendo los archivos de la sucursal 1\n"
+            # Mover archivos al directorio destino local sin enviarlos por SFTP
+            for archivo in "$sucursal_dir"/*; do
+                mv "$sucursal_dir"/* "$directorio_destino_sftp/"
+                echo "Archivo $archivo movido al directorio local $directorio_destino_sftp"
+                
+                echo -e "\nSe ejecuta el script cobranzas.sh para la sucursal 1\n"
+                # Ejecutar cobranzas.sh
+                nombre_archivo=$(basename "$archivo")
+                fecha_archivo=$(echo "$nombre_archivo" | cut -d'-' -f4 | cut -d'.' -f1)
+                echo -e "\nEjecutando script cobranzas.sh para la sucursal $numero_sucursal, fecha $fecha_archivo\n"
+                
+                /usr/local/bin/cobranzas.sh "$numero_sucursal" "$fecha_archivo"
+                
+                # Verificar si es después de las 18:00 para ejecutar transferencias.sh solo una vez
+                hora_actual=$(date +"%H%M")
+                if [ "$hora_actual" -ge 1730 ]; then
+                    echo "Ejecutando script transferencias.sh para la sucursal $numero_sucursal, fecha $fecha_archivo"
+                    
+                    /usr/local/bin/transferencias.sh "$numero_sucursal" "$fecha_archivo"
+                else
+                    echo "No es hora de ejecutar transferencias.sh. Se omite para la sucursal $numero_sucursal."
+                fi
+            done
+            continue
+        fi
+
+        # Para las otras sucursales, procesar normalmente con SFTP
+        if [ ${sucursales[$numero_sucursal]+_} ]; then
+            dom=${sucursales[$numero_sucursal]}
+            servidor_sftp="${dom}.tdfcard.com"
+            
+            echo -e "\nTransfiriendo archivos de la sucursal $numero_sucursal a $servidor_sftp\n"
+            
+            # Conectar a SFTP y transferir archivos
+            sftp "$usuario_sftp@$servidor_sftp" <<EOF
+cd $directorio_destino_sftp
+$(for archivo in "$sucursal_dir"/*; do echo "put $archivo"; done)
+bye
+EOF
+            echo -e "\nArchivos de la sucursal $numero_sucursal transferidos\n"
+
+            # Ejecutar cobranzas.sh siempre
+            for archivo in "$sucursal_dir"/*; do
+                nombre_archivo=$(basename "$archivo")
+                fecha_archivo=$(echo "$nombre_archivo" | cut -d'-' -f4 | cut -d'.' -f1)
+
+                echo -e "\nEjecutando script remoto cobranzas.sh para la sucursal $numero_sucursal, fecha $fecha_archivo\n"
+                if [$numero_sucursal -eq 14 ]; then 
+                    echo -e "\nSucursal $numero_sucursal se usa el usuario $usuario_remoto_suc14\n"
+
+                    /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto_suc14 $contrasena "cobranzas.sh $numero_sucursal $fecha_archivo"
+                else 
+                    /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto $contrasena "cobranzas.sh $numero_sucursal $fecha_archivo"
+
+                fi
+
+                # Verificar si es después de las 17:30 para ejecutar transferencias.sh solo una vez
+                hora_actual=$(date +"%H%M")
+                if [ "$hora_actual" -ge 1730 ]; then
+                    echo "Ejecutando script remoto transferencias.sh para la sucursal $numero_sucursal, fecha $fecha_archivo"
+
+                    if [$numero_sucursal -eq 14 ]; then 
+                        /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto_suc14 $contrasena "transferencias.sh $numero_sucursal $fecha_archivo"
+                    else 
+                        /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto $contrasena "transferencias.sh $numero_sucursal $fecha_archivo"
+                    fi
+                else
+                    echo "No es hora de ejecutar transferencias.sh. Se omite para la sucursal $numero_sucursal."
+                fi
+
+                echo -e "\nProcesamiento completo para la sucursal $numero_sucursal\n"
+            done
+        else
+            echo "No se encontró un dominio para la sucursal: $numero_sucursal"
+        fi
+    fi
+done
+
+# Limpiar el directorio temporal
+rm -rf "$temp_dir"
+
+echo -e "\nTodos los archivos han sido procesados.\n"
+
+# Eliminar archivos de /public/Ariel/Rocio/archivosSuc 
+#echo "Eliminando archivos en el directorio de destino: /public/Ariel/Rocio/archivosSuc..."
+#rm -rf /public/Ariel/Rocio/archivosSuc/*
+#echo "Archivos en /public/Ariel/Rocio/archivosSuc han sido eliminados."
