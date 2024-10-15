@@ -9,11 +9,9 @@ fi
 numero_sucursal=$1
 Fecha=$2
 
-echo "La sucursal es: $numero_sucursal"
-echo "La fecha es: $Fecha"  
 
 # Directorio y archivo de la sucursal
-directorio_sucursal="/salud/enviados/transferencias"
+directorio_sucursal="/backup/Ariel/Rocio/archivos"
 archivo_sucursal="$directorio_sucursal/PAGDEB-TARJETAS-${numero_sucursal}-${Fecha}.TXT"
 
 echo "Se busca en el directorio: $directorio_sucursal"
@@ -24,43 +22,36 @@ if [ ! -f "$archivo_sucursal" ]; then
     exit 1
 fi
 
-directorio_destino="/d1/tdf/prog/db"
+directorio_destino="/tdf/prog/db"
 
 # Mover el archivo al directorio de destino
-mv "$archivo_sucursal" "$directorio_destino/"
+cp "$archivo_sucursal" "$directorio_destino/"
 if [ $? -eq 0 ]; then
     echo "Archivo movido exitosamente a $directorio_destino."
 else
     echo "Error al mover el archivo."
+    exit 1
 fi
 
-
-
-ingresar_enter=$(enter)
+# Mostrar los valores que se pasarán al runcobol para depuración
+echo "Valores que se pasan a runcobol:"
+echo "Sucursal: $numero_sucursal"
+echo "Fecha: $Fecha"
 
 # Ejecutar el runcobol con los datos generados
-cd /d1/tdf/prog/onpr
-runcobol ca01t.int <<EOF
-$sucursal 
+cd /tdf/prog/onpr
+runcobol ca01t.int <<-EOF
+$numero_sucursal
 $Fecha
 99000070
-ca8 
-1 
+ca8
+1
 EOF
+
 
 if [ $? -ne 0 ]; then
     echo "Error al ejecutar runcobol"
+else 
+    echo "Todos los datos han sido procesados."
 fi
-
-echo "Todos los datos han sido procesados."
-
-# Eliminar el archivo del directorio de destino
-#rm "$directorio_destino/PAGDEB-TARJETAS-${numero_sucursal}-${fecha}.TXT"
-
-# Comprobar si la eliminación fue exitosa
-#if [ $? -eq 0 ]; then
-#    echo "Archivo eliminado exitosamente de $directorio_destino."
-#else
-#    echo "Error al eliminar el archivo de $directorio_destino."
-#fi
 
