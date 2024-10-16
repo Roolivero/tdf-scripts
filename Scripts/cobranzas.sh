@@ -21,7 +21,6 @@ directorio_sucursal="/salud/enviados/transferencias"
 archivo_sucursal="$directorio_sucursal/PAGDEB-TARJETAS-${numero_sucursal}-${Fecha}.TXT"
 
 echo "Se busca en el directorio: $directorio_sucursal"
-
 # Verificar si el archivo existe
 if [ ! -f "$archivo_sucursal" ]; then
     echo "No se encontró el archivo: $archivo_sucursal"

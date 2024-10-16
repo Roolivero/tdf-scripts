@@ -150,6 +150,6 @@ done < "$archivo_caja"
 echo "Archivos temporales creados en el directorio $directorio_destino"
 
 
-# Ejecutar enviar-sucursales.sh automáticamente al final
-#echo -e "\nEjecutando enviar-sucursales.sh...\n"
-#./enviar_sucursales.sh
+#Ejecutar enviar-sucursales.sh automáticamente al final
+echo -e "\nEjecutando enviar-sucursales.sh...\n"
+./enviar_sucursales.sh

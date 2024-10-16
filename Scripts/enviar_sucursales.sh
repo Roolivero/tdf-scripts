@@ -117,6 +117,10 @@ EOF
             for archivo in "$sucursal_dir"/*; do
                 echo "Archivo: $archivo"
             done
+            echo -e "\n Los archivos en $directorio_destino_sftp:\n"
+            for archivo in "$directorio_destino_sftp"/*; do
+                echo "Archivo: $archivo"
+            done
             # Ejecutar cobranzas.sh siempre
             for archivo in "$sucursal_dir"/*; do
                 nombre_archivo=$(basename "$archivo")
@@ -128,8 +132,8 @@ EOF
                         echo -e "\nSucursal $numero_sucursal se usa el usuario $usuario_remoto_suc14\n"
 
                         /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto_suc14 $contrasena "cobranzas.sh $numero_sucursal $fecha_archivo"
-                    #else 
-                        #/usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto $contrasena "cobranzas.sh $numero_sucursal $fecha_archivo"
+                    else 
+                        /usr/local/bin/tdfexec64 L "$servidor_sftp;" $usuario_remoto $contrasena "cobranzas.sh $numero_sucursal $fecha_archivo"
 
                     fi
                 elif [[ "$nombre_archivo" == TRANSFERENCIAS-TARJETAS-*-*.TXT ]]; then
@@ -148,6 +152,10 @@ EOF
                     fi
                 fi
                 echo -e "\nProcesamiento completo para la sucursal $numero_sucursal\n"
+                echo -e "\n Los archivos en $directorio_destino_sftp:\n"
+                for archivo in "$directorio_destino_sftp"/*; do
+                echo "Archivo: $archivo"
+                done
             done
         else
             echo "No se encontró un dominio para la sucursal: $numero_sucursal"
