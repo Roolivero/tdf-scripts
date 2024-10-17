@@ -13,7 +13,7 @@ echo "La sucursal es: $numero_sucursal"
 echo "La fecha es: $Fecha" 
 
 # Directorio y archivo de la sucursal
-directorio_sucursal="/salud/enviados/transferencias"
+directorio_sucursal="/backup/Ariel/Rocio/archivos"
 archivo_sucursal="$directorio_sucursal/TRANSFERENCIAS-TARJETAS-${numero_sucursal}-${Fecha}.TXT"
 
 echo "Se busca en el directorio: $directorio_sucursal"
@@ -42,6 +42,7 @@ do
     ((contador++))
 done < "$archivo_sucursal"
 
+
 # Función para determinar el concepto según el código del banco
 conceptoBanco() {
     local codigo=$1
@@ -59,7 +60,9 @@ transferencias() {
     instrucciones=""
     lineas_leidas=0
 
-    while IFS=',' read -r sucursal fecha importe codigo_banco banco; do
+    echo "Debug: Iniciando la lectura del archivo de transferencias..."
+
+    while IFS=';' read -r sucursal fecha importe codigo_banco banco; do
         # Limpiar variables
         codigo_banco=$(echo "$codigo_banco" | tr -d ' ')
         importe=$(echo "$importe" | tr -d ' ' | sed 's/^0*//') # Eliminar ceros iniciales
@@ -83,6 +86,10 @@ transferencias() {
         instrucciones+="G"$'\n'
         instrucciones+="${importe}"$'\n'
 
+        # Imprimir las instrucciones generadas hasta el momento
+        #echo "Debug: Instrucciones generadas hasta ahora:"
+        #echo "$instrucciones"
+
         contador=$((contador + 1))
         lineas_leidas=$((lineas_leidas + 1))
 
@@ -94,6 +101,7 @@ transferencias() {
                 instrucciones+="A"$'\n'
                 instrucciones+="S"$'\n'
                 contador=0 
+                echo "Debug: Se agregó un salto de página en las instrucciones."
             fi
         fi
     done < "$archivo_sucursal"
@@ -101,12 +109,13 @@ transferencias() {
     echo "$instrucciones"
 }
 
-
 # Función para el cierre
 fin_comando() {
     instrucciones=""
     lineas_usadas=$((num_lineas % 6))
     lineas_vacias=$((6 - lineas_usadas))
+    echo "lineas usadas: $lineas_usadas"
+    echo "lineas vacias: $lineas_vacias"
 
     # Si las líneas usadas son 0, simplemente se cierra con 0,F
     if [ $lineas_usadas -eq 0 ]; then
@@ -116,10 +125,12 @@ fin_comando() {
         # Agregar líneas vacías si faltan para completar 6
         for ((i=1; i<=lineas_vacias; i++)); do
             instrucciones+=$'\n'
+            echo "se agrega el espacio: $i"
         done
         instrucciones+="0"$'\n'
         instrucciones+="F"$'\n'
     fi
+
     echo "$instrucciones"
 }
 
@@ -128,9 +139,17 @@ instrucciones=$(transferencias)
 # Generar las instrucciones finales
 instrucciones_fin=$(fin_comando)
 
+# Mostrar los valores que se pasarán al runcobol para depuración
+echo -e "\nDebug: Valores que se pasan a runcobol:\n"
+echo "Sucursal: $numero_sucursal"
+echo "Fecha: $Fecha"
+echo "Instrucciones:"
+echo "$instrucciones"
+echo "Instrucciones finales:"
+echo "$instrucciones_fin"
 
 # Ejecutar el runcobol con los datos generados
-cd /d1/tdf/prog/onpr
+cd /tdf/prog/onpr
 runcobol ca70.int <<EOF
 1
 70
