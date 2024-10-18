@@ -59,7 +59,7 @@ transferencias() {
     instrucciones=""
     lineas_leidas=0
 
-    while IFS=',' read -r sucursal fecha importe codigo_banco banco; do
+    while IFS=';' read -r sucursal fecha importe codigo_banco banco; do
         # Limpiar variables
         codigo_banco=$(echo "$codigo_banco" | tr -d ' ')
         importe=$(echo "$importe" | tr -d ' ' | sed 's/^0*//') # Eliminar ceros iniciales

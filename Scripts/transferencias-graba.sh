@@ -5,7 +5,7 @@
 # Directorio donde se encuentran los archivos
 directorio="/public/Ariel/Rocio/archivos"
 directorio_destino="/public/Ariel/Rocio/archivosSuc"
-fecha_del_dia=$(date +"%d%m%y")
+fecha_del_dia=$(date +"%d%m%Y")
 echo "La fecha es: $fecha_del_dia"
 
 echo "Buscando en directorio: $directorio"
@@ -56,7 +56,7 @@ do
         if [ -z "${sucursales_presentes_banco[$sucursal_num]}" ]; then
             echo "Creando archivo para la sucursal $sucursal_num: $archivo_suc_banco"
             # Inicializar el archivo con un encabezado
-            echo "Sucursal;Fecha;Importe;Código Banco;Banco" > "$archivo_suc_banco"
+            #echo "Sucursal;Fecha;Importe;Código Banco;Banco" > "$archivo_suc_banco"
             # Marcar la sucursal como procesada
             sucursales_presentes_banco[$sucursal_num]=1
         fi
@@ -73,9 +73,9 @@ do
     fi
 done < "$archivo_banco"
 
-# Concatenar todos los archivos de transferencias al final del día (a las 18)
+# Concatenar todos los archivos de transferencias al final del día (a las 17:30)
 hora_actual=$(date +"%H")
-if [ "$hora_actual" -ge 18 ]; then
+if [ "$hora_actual" -ge 1730 ]; then
     echo "Concatenando archivos de transferencias..."
 
     # Concatenamos los archivos para cada sucursal
